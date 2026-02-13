@@ -1,100 +1,119 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import YearGrid from '@/components/YearGrid'
+import HabitGrid from '@/components/HabitGrid'
+import WeeklyView from '@/components/WeeklyView'
+import HabitManager from '@/components/HabitManager'
+
+interface Habit {
+  id: string
+  name: string
+  color: string
+}
+
+interface DayData {
+  [habitId: string]: boolean
+}
 
 export default function Home() {
-  const [completedDays, setCompletedDays] = useState<Set<string>>(new Set())
-  const [currentStreak, setCurrentStreak] = useState(0)
+  const [habits, setHabits] = useState<Habit[]>([])
+  const [completedData, setCompletedData] = useState<Record<string, DayData>>({})
+  const [view, setView] = useState<'year' | 'week'>('year')
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('completedDays')
-    if (saved) {
-      setCompletedDays(new Set(JSON.parse(saved)))
-    }
+    const savedHabits = localStorage.getItem('habits')
+    const savedData = localStorage.getItem('completedData')
+    
+    if (savedHabits) setHabits(JSON.parse(savedHabits))
+    if (savedData) setCompletedData(JSON.parse(savedData))
   }, [])
 
-  // Calculate streak
-  useEffect(() => {
-    const today = new Date()
-    let streak = 0
-    
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
-      
-      if (completedDays.has(dateStr)) {
-        streak++
-      } else if (i > 0) {
-        // Allow missing today, but break on first gap
-        break
-      }
-    }
-    
-    setCurrentStreak(streak)
-  }, [completedDays])
+  const saveHabits = (newHabits: Habit[]) => {
+    setHabits(newHabits)
+    localStorage.setItem('habits', JSON.stringify(newHabits))
+  }
 
-  const toggleDay = (date: string) => {
-    const newCompleted = new Set(completedDays)
-    if (newCompleted.has(date)) {
-      newCompleted.delete(date)
-    } else {
-      newCompleted.add(date)
-    }
-    setCompletedDays(newCompleted)
-    localStorage.setItem('completedDays', JSON.stringify([...newCompleted]))
+  const toggleHabit = (date: string, habitId: string) => {
+    const newData = { ...completedData }
+    if (!newData[date]) newData[date] = {}
+    
+    newData[date][habitId] = !newData[date][habitId]
+    setCompletedData(newData)
+    localStorage.setItem('completedData', JSON.stringify(newData))
   }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Painted Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-100">
-        <div className="absolute inset-0 opacity-30"
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        <div className="absolute inset-0 opacity-20"
              style={{
-               backgroundImage: `radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.3) 0%, transparent 50%),
-                                radial-gradient(circle at 80% 80%, rgba(249, 115, 22, 0.2) 0%, transparent 50%),
-                                radial-gradient(circle at 40% 20%, rgba(234, 179, 8, 0.2) 0%, transparent 50%)`
+               backgroundImage: `radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.2) 0%, transparent 50%),
+                                radial-gradient(circle at 80% 80%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)`
              }}
         />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-16">
+      <div className="relative z-10 container mx-auto px-4 py-12 max-w-7xl">
+        {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-block bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium text-gray-600 mb-4">
-            Day {completedDays.size}
-          </div>
-          <h1 className="text-7xl md:text-8xl font-serif font-bold text-gray-800 mb-4">
+          <h1 className="text-6xl md:text-7xl font-serif font-bold text-gray-800 mb-3 italic">
             365 days.
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Build your habit, one day at a time.<br />
-            Click any day to mark it complete.
+          <p className="text-lg text-gray-600 font-light">
+            track your habits, build your year
           </p>
         </div>
 
-        {/* Streak Counter */}
-        <div className="text-center mb-8">
-          <div className="inline-block bg-white/90 backdrop-blur-sm px-8 py-4 rounded-2xl shadow-lg">
-            <p className="text-sm text-gray-500 mb-1">Current Streak</p>
-            <p className="text-5xl font-bold text-orange-500">{currentStreak}</p>
-            <p className="text-sm text-gray-500 mt-1">days</p>
-          </div>
+        {/* View Toggle */}
+        <div className="flex justify-center gap-4 mb-8">
+          <button
+            onClick={() => setView('year')}
+            className={`px-6 py-2 rounded-full transition-all ${
+              view === 'year'
+                ? 'bg-gray-800 text-white'
+                : 'bg-white/80 text-gray-600 hover:bg-white'
+            }`}
+          >
+            Year View
+          </button>
+          <button
+            onClick={() => setView('week')}
+            className={`px-6 py-2 rounded-full transition-all ${
+              view === 'week'
+                ? 'bg-gray-800 text-white'
+                : 'bg-white/80 text-gray-600 hover:bg-white'
+            }`}
+          >
+            Weekly View
+          </button>
         </div>
 
-        {/* Year Grid */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 md:p-12 shadow-2xl max-w-6xl mx-auto">
-          <YearGrid 
-            completedDays={completedDays}
-            onToggleDay={toggleDay}
-          />
+        {/* Habit Manager */}
+        <HabitManager habits={habits} onUpdateHabits={saveHabits} />
+
+        {/* Main Content */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 md:p-12 shadow-2xl">
+          {view === 'year' ? (
+            <HabitGrid 
+              habits={habits}
+              completedData={completedData}
+              onToggleHabit={toggleHabit}
+            />
+          ) : (
+            <WeeklyView
+              habits={habits}
+              completedData={completedData}
+              onToggleHabit={toggleHabit}
+            />
+          )}
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-12 text-gray-500 text-sm">
-          <p>Track your progress. Build consistency. Own your year.</p>
+        <div className="text-center mt-8 text-gray-500 text-sm font-light">
+          <p className="italic">your progress, your story</p>
         </div>
       </div>
     </div>
