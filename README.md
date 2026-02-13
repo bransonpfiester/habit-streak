@@ -3,7 +3,7 @@
 Beautiful year-at-a-glance habit tracker. Click any day to mark it complete and build your streak.
 
 ## Live Demo
-Coming soon...
+https://habit-streak-lilac.vercel.app
 
 ## Features
 
