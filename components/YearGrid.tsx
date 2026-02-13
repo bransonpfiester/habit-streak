@@ -10,6 +10,13 @@ export default function YearGrid({ completedDays, onToggleDay }: YearGridProps) 
     const year = new Date().getFullYear()
     const startDate = new Date(year, 0, 1)
     
+    // Add empty days for week alignment
+    const firstDayOfWeek = startDate.getDay()
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      days.push(null)
+    }
+    
+    // Add all days of the year
     for (let i = 0; i < 365; i++) {
       const date = new Date(startDate)
       date.setDate(startDate.getDate() + i)
@@ -24,16 +31,20 @@ export default function YearGrid({ completedDays, onToggleDay }: YearGridProps) 
 
   return (
     <div className="space-y-6">
-      {/* Month Labels */}
-      <div className="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium">
-        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(month => (
-          <div key={month} className="text-center">{month}</div>
+      {/* Day of Week Labels */}
+      <div className="grid grid-cols-7 gap-2 text-xs text-gray-500 font-medium">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center">{day}</div>
         ))}
       </div>
 
-      {/* Day Grid */}
-      <div className="grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1">
-        {days.map((date) => {
+      {/* Day Grid - 7 columns (week) */}
+      <div className="grid grid-cols-7 gap-2 sm:gap-3">
+        {days.map((date, idx) => {
+          if (!date) {
+            return <div key={`empty-${idx}`} className="aspect-square" />
+          }
+
           const dateStr = date.toISOString().split('T')[0]
           const isCompleted = completedDays.has(dateStr)
           const isToday = dateStr === today
@@ -45,16 +56,16 @@ export default function YearGrid({ completedDays, onToggleDay }: YearGridProps) 
               onClick={() => !isFuture && onToggleDay(dateStr)}
               disabled={isFuture}
               className={`
-                aspect-square rounded-sm transition-all duration-200
+                aspect-square rounded-md transition-all duration-200 min-h-[32px] sm:min-h-[40px]
                 ${isCompleted 
-                  ? 'bg-green-500 hover:bg-green-600 shadow-sm' 
+                  ? 'bg-green-500 hover:bg-green-600 shadow-md' 
                   : isFuture
-                  ? 'bg-gray-100 cursor-not-allowed'
-                  : 'bg-gray-200 hover:bg-gray-300'
+                  ? 'bg-gray-100 cursor-not-allowed opacity-50'
+                  : 'bg-gray-200 hover:bg-gray-300 active:bg-gray-400'
                 }
-                ${isToday && !isCompleted ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
+                ${isToday && !isCompleted ? 'ring-2 ring-orange-400' : ''}
                 ${isCompleted ? 'scale-105' : 'scale-100'}
-                hover:scale-110
+                hover:scale-110 active:scale-95
                 disabled:hover:scale-100
               `}
               title={date.toLocaleDateString('en-US', { 
@@ -62,23 +73,27 @@ export default function YearGrid({ completedDays, onToggleDay }: YearGridProps) 
                 day: 'numeric',
                 year: 'numeric'
               })}
-            />
+            >
+              <span className="text-[10px] sm:text-xs text-gray-600 font-medium">
+                {date.getDate()}
+              </span>
+            </button>
           )
         })}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 text-sm text-gray-600 pt-4">
+      <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 pt-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-200 rounded-sm" />
+          <div className="w-6 h-6 bg-gray-200 rounded-md" />
           <span>Incomplete</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded-sm" />
+          <div className="w-6 h-6 bg-green-500 rounded-md" />
           <span>Complete</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-100 rounded-sm" />
+          <div className="w-6 h-6 bg-gray-100 rounded-md opacity-50" />
           <span>Future</span>
         </div>
       </div>
